@@ -1,0 +1,48 @@
+input
+{
+background: transparent;
+border: none;
+outline: none;
+color: white;
+font-family: courier;
+font-weight: bold;
+}
+
+#main_container
+{
+float: left;
+}
+
+.overlay
+{
+position: absolute;
+top: 0px;
+left: 0px;
+}
+
+.hidden
+{
+visibility: hidden;
+}
+
+.visible
+{
+visibility: visible;
+}
+
+.introText
+{
+margin-left: 50px;
+color: white;
+font-family: courier;
+font-weight: bold;
+text-align: center;
+}
+
+.gameText
+{
+color: white;
+font-family: courier;
+font-weight: bold;
+position: absolute;
+}
