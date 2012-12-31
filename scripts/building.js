@@ -6,6 +6,47 @@
 	this.x = x;
 	this.width = width;
 	this.height = height;
+	
+	// verteces
+	this.topLeft = new Object();
+	this.topRight = new Object();
+	this.bottomLeft = new Object();
+	this.bottomRight = new Object();
+	
+	this.topLeft.x = x;
+	this.topLeft.y = gameHeight-BOTTOM_PADDING-height;
+	this.topRight.x = x+width;
+	this.topRight.y = gameHeight-BOTTOM_PADDING-height;
+	this.bottomLeft.x = x;
+	this.bottomLeft.y = gameHeight-BOTTOM_PADDING;
+	this.bottomRight.x = x+width;
+	this.bottomRight.y = gameHeight-BOTTOM_PADDING;
+	
+	// check for bulding collision at verteces
+	this.clipCheck = function( x, y ) {
+		console.log( "building:clipCheck(): input coords: ("+x+", "+y+")" );
+		console.log( "building:clipCheck(): building coords :\n"+
+		"("+this.topLeft.x+", "+this.topLeft.y+") "+
+		"("+this.topRight.x+", "+this.topRight.y+")\n"+
+		"("+this.bottomLeft.x+", "+this.bottomLeft.y+") "+
+		"("+this.bottomRight.x+", "+this.bottomRight.y+")" );
+		
+		// check left edge
+		if ( x >= this.topLeft.x && (y >= this.topLeft.y && y <= this.bottomLeft.y) ) {
+			console.log( "building:clipCheck(): building left clip registered at (" );
+			return true;
+		}
+		console.log( "building:clipCheck(): building left clip missed by <"+(this.topLeft.x-x)+", "+(this.topLeft.y-y)+">" );
+		
+		// check right edge
+		if ( x <= this.topRight.x && (y >= this.topRight.y && y <= this.bottomRight.y) ) {
+			console.log( "building:clipCheck(): building right clip registered at (" );
+			return true;
+		}
+		console.log( "building:clipCheck(): building right clip missed by <"+(this.topRight.x-x)+", "+(this.topRight.y-y)+">" );
+		
+		return false;
+	}
 }
 
 var context;

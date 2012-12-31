@@ -20,25 +20,25 @@ function Banana( x, y, owner ) {
 	this.hUpImage.src = "images/banana_h_up.png";
 	this.hUpImage.onload = function() {
 		imageReady[0] = true;
-		console.log( "banana:Banana(): hUpImage loaded" );
+		//console.log( "banana:Banana(): hUpImage loaded" );
 	};
 	this.vRightImage = new Image();
 	this.vRightImage.src = "images/banana_v_right.png";
 	this.vRightImage.onload = function() {
 		imageReady[3] = true;
-		console.log( "banana:Banana(): vRightImage loaded" );
+		//console.log( "banana:Banana(): vRightImage loaded" );
 	};
 	this.hDownImage = new Image();
 	this.hDownImage.src = "images/banana_h_down.png";
 	this.hDownImage.onload = function() {
 		imageReady[2] = true;
-		console.log( "banana:Banana(): hDownImage loaded" );
+		//console.log( "banana:Banana(): hDownImage loaded" );
 	};
 	this.vLeftImage = new Image();
 	this.vLeftImage.src = "images/banana_v_left.png";
 	this.vLeftImage.onload = function() {
 		imageReady[1] = true;
-		console.log( "banana:Banana(): vLeftImage loaded" );
+		//console.log( "banana:Banana(): vLeftImage loaded" );
 	};
 	
 	this.images = [];
@@ -123,7 +123,6 @@ function launchBanana( context, player, opponent, buildings, angle, vel, callbac
 		}
 		banana.draw( context );
 		
-		// test 160, 161
 		hitType = hitCheck( banana.x, banana.y, player, opponent, buildings );
 		
 		if ( hitType != "inPlay" ) { 

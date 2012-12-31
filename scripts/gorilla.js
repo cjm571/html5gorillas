@@ -2,10 +2,13 @@
  * Author: CJ McAllister
  */
 
-function Gorilla( x, y, playerNum ) {
+function Gorilla( x, y, playerNum, buildingNum ) {
 	this.x = x;
 	this.y = y;
+	
 	this.playerNum = playerNum;
+	
+	this.buildingNum = buildingNum;
 }
 
 var EXPLOSION_RADIUS = 75;
@@ -29,8 +32,8 @@ function initGorillas( /*[in]*/ canvasContext,  /*[in]*/ buildings, /*[out]*/ go
 	
 	// place gorilla on building
 	var gorillaX = buildings[buildingNum].x + (buildings[buildingNum].width/2) - (GORILLA_WIDTH/2);
-	var gorillaY = gameHeight - buildings[buildingNum].height - GORILLA_HEIGHT - 14;
-	var gorillaA = new Gorilla( gorillaX, gorillaY, 0 );
+	var gorillaY = gameHeight - buildings[buildingNum].height - GORILLA_HEIGHT - BOTTOM_PADDING;
+	var gorillaA = new Gorilla( gorillaX, gorillaY, 0, buildingNum );
 	var gorillaAImg = new Image();
 	gorillaAImg.src = "images/gorilla.png";
 	gorillaAImg.onload = function() {
@@ -40,8 +43,8 @@ function initGorillas( /*[in]*/ canvasContext,  /*[in]*/ buildings, /*[out]*/ go
 	// randomly choose right-side buidling to place gorilla B
 	buildingNum = i + Math.floor( Math.random() * (buildings.length - i) );
 	gorillaX = buildings[buildingNum].x + (buildings[buildingNum].width/2) - (GORILLA_WIDTH/2);
-	gorillaY = gameHeight - buildings[buildingNum].height - GORILLA_HEIGHT - 14;
-	var gorillaB = new Gorilla( gorillaX, gorillaY, 1 );
+	gorillaY = gameHeight - buildings[buildingNum].height - GORILLA_HEIGHT - BOTTOM_PADDING;
+	var gorillaB = new Gorilla( gorillaX, gorillaY, 1, buildingNum );
 	var gorillaBImg = new Image();
 	gorillaBImg.src = "images/gorilla.png";
 	gorillaBImg.onload = function() {

@@ -41,6 +41,7 @@ window.addEventListener( 'load', function() {
 	var keypressCount = 0; // hack to prevent invalid input popup on game start
 	
 	var currentPlayer = 1; // hack, will be switched to 0 during initialzation
+	var otherPlayer = (currentPlayer + 1) % 2;
 	var scores = [0, 0];
 	var playerCount = 1;
 	var player0Name = "Player 1";
@@ -413,36 +414,103 @@ window.addEventListener( 'load', function() {
 		var hitType = "inPlay";
 		var angle, vel, tmpX, tmpY;
 	
-		console.log( "main_game:computerAction(): beginning brute force loop" );
-	
-		// calculate direct hit (brute force, will make fancy later)
-		for ( vel=0; vel<100; vel++ ) {
-			for ( angle=0; angle<90; angle++ ) {
-			var theta = (angle * Math.PI ) / 180;
-				hitType = "inPlay";
-				for ( var t=0.0; hitType=="inPlay"; t += 0.05 ) {
-					// throw banana in positive X dir for player 0, negative for player 1
-					if ( currentPlayer == 0 ) {
-						tmpX = (gorillas[currentPlayer].x+(GORILLA_WIDTH/2)) + (vel*t* Math.cos(theta));
-						tmpY = (gorillas[currentPlayer].y-1) - (vel*t*Math.sin(theta)) + (0.5*grav*Math.pow(t,2));
-					}
-					else {
-						tmpX = (gorillas[currentPlayer].x+(GORILLA_WIDTH/2)) - (vel*t* Math.cos(theta));
-						tmpY = (gorillas[currentPlayer].y-1) - (vel*t*Math.sin(theta)) + (0.5*grav*Math.pow(t,2));
-					}
-					
-					hitType = hitCheck( tmpX, tmpY, gorillas[currentPlayer], gorillas[(currentPlayer+1)%2], buildings );
+		// determine trajectory via theta = atan((v^2 +- sqrt(v^4 - g(gx^2+2yv^2)))/gx)
+		console.log( "main_game:computerAction(): computing direct hit" );
+		
+		var range = Math.abs(gorillas[otherPlayer].x - gorillas[currentPlayer].x);
+		var altitude = (gameHeight - (gorillas[otherPlayer].y+(GORILLA_HEIGHT/2))) - (gameHeight - (gorillas[currentPlayer].y-1));
+		console.log( "main_game:computerAction(): Range: "+range+" Altitude: "+altitude );
+		for( vel=0; vel<100; vel++ ) {
+			var descrim = Math.pow(vel,4) - grav*((grav*Math.pow(range,2)) + (2*altitude*Math.pow(vel,2)));
+			console.log( "main_game:computerAction(): descriminant: "+descrim );
+			var theta1 = Math.atan((Math.pow(vel,2) + Math.sqrt(descrim))/(grav*range));
+			var theta2 = Math.atan((Math.pow(vel,2) - Math.sqrt(descrim))/(grav*range));
+			
+			// check theta values for validity
+			var theta;
+			console.log( "main_game:computerAction(): theta1: "+theta1+" theta2: "+theta2 );
+			if ( isNaN(theta1) && isNaN(theta2) ) {
+				console.log( "main_game:computerAction(): both NaN, continuing..." );
+				continue;
+			}
+			else if ( isNaN(theta1) && !isNaN(theta2) ) {
+				console.log( "main_game:computerAction(): theta1 NaN, using theta2" );
+				theta = theta2;
+			}
+			else if ( !isNaN(theta1) && isNaN(theta2) ) {
+				console.log( "main_game:computerAction(): theta2 NaN, using theta1" );
+				theta = theta1;
+			}
+			// choose max first if both valid; will be less likely to clip building
+			else {
+				console.log( "main_game:computerAction(): both valid, using max" );
+				theta = Math.max( theta1, theta2 );
+			}
+			
+			// check for clipping on buildings
+			// get subset of buildings between current and target player
+			var bldgSubset = [];
+			if ( currentPlayer == 0 ) {
+				bldSubset = buildings.slice( gorillas[currentPlayer].buildingNum+1, gorillas[otherPlayer].buildingNum ); 
+			}
+			else {
+				bldSubset = buildings.slice( gorillas[otherPlayer].buildingNum+1, gorillas[currentPlayer].buildingNum ); 			
+			}
+			
+			// clip check on each builing's top left and right edges in subset
+			var bldClip = "inPlay";
+			for ( var i=0; i<bldSubset.length; i++ ) {
+				var distLeft = Math.abs(bldSubset[i].topLeft.x - (gorillas[currentPlayer].x+(GORILLA_WIDTH/2)));
+				var distRight = Math.abs(bldSubset[i].topRight.x - (gorillas[currentPlayer].x+(GORILLA_WIDTH/2)));
+				
+				// pad each dist by 1 unit to avoid calculated misses that are actually hits
+				if ( currentPlayer == 0 ) {
+					distLeft--;
+					distRight++;
+				}
+				else {
+					distLeft++;
+					distRight--;
+				}
+				console.log( "main_game:computerAction(): bld "+i+" distLeft: "+distLeft+" distRight: "+distRight );
+				
+				var y0 = gameHeight - (gorillas[currentPlayer].y-1);
+				var projHeightLeft = y0 + distLeft*Math.tan(theta) - (grav*Math.pow(distLeft,2))/(2*Math.pow(vel*Math.cos(theta),2));
+				var projHeightRight = y0 + distRight*Math.tan(theta) - (grav*Math.pow(distRight,2))/(2*Math.pow(vel*Math.cos(theta),2));
+				var projYLeft = gameHeight - projHeightLeft;
+				var projYRight = gameHeight - projHeightRight;
+				console.log( "main_game:computerAction(): projYLeft: "+projYLeft+" Top Left Y: "+bldSubset[i].topLeft.y);
+				console.log( "main_game:computerAction(): projYRight: "+projYRight+" Top Right Y: "+bldSubset[i].topRight.y);
+				
+				bldClip = bldSubset[i].clipCheck( bldSubset[i].topLeft.x, projYLeft );
+				if ( bldClip == false ) {
+					bldClip = bldSubset[i].clipCheck( bldSubset[i].topRight.x, projYRight );
 				}
 				
-				if ( hitType == "opp" ) {
+				// break loop on clip detection
+				if ( bldClip == true ) {
 					break;
 				}
 			}
-			if ( hitType == "opp" ) {
+			
+			// if clips on building, keep trying
+			// otherwise we have a successful trajectory
+			if ( bldClip == true ) {
+				console.log( "main_game:computerAction(): theta: "+theta+" vel: "+vel+" clipped building, continuing" );
+				continue;
+			}
+			else {
+				angle = Math.round(theta * 180 / Math.PI);
 				break;
 			}
 		}
 		
+		// if no suitable angle found, NPC will suicide
+		if ( typeof angle === "undefined" ) {
+			angle = 90;
+			vel = 25;
+		}
+	
 		console.log( "main_game:computerAction(): Trajectory found: angle: "+angle+" vel: "+vel );
 		
 		// TODO generate random error
@@ -475,7 +543,7 @@ window.addEventListener( 'load', function() {
 	
 	// changes the active player
 	function switchPlayer( ) {
-		var otherPlayer = currentPlayer;
+		otherPlayer = currentPlayer;
 		currentPlayer = (currentPlayer + 1) % 2;
 		
 		// remove old game text and re-init
