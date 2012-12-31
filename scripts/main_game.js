@@ -420,34 +420,20 @@ window.addEventListener( 'load', function() {
 		var range = Math.abs(gorillas[otherPlayer].x - gorillas[currentPlayer].x);
 		var altitude = (gameHeight - (gorillas[otherPlayer].y+(GORILLA_HEIGHT/2))) - (gameHeight - (gorillas[currentPlayer].y-1));
 		console.log( "main_game:computerAction(): Range: "+range+" Altitude: "+altitude );
+		
+		var trajSuccess = false;
 		for( vel=0; vel<100; vel++ ) {
 			var descrim = Math.pow(vel,4) - grav*((grav*Math.pow(range,2)) + (2*altitude*Math.pow(vel,2)));
 			console.log( "main_game:computerAction(): descriminant: "+descrim );
 			var theta1 = Math.atan((Math.pow(vel,2) + Math.sqrt(descrim))/(grav*range));
 			var theta2 = Math.atan((Math.pow(vel,2) - Math.sqrt(descrim))/(grav*range));
+			var theta = [theta1, theta2];
 			
-			// check theta values for validity
-			var theta;
-			console.log( "main_game:computerAction(): theta1: "+theta1+" theta2: "+theta2 );
+			// validity check
 			if ( isNaN(theta1) && isNaN(theta2) ) {
-				console.log( "main_game:computerAction(): both NaN, continuing..." );
 				continue;
 			}
-			else if ( isNaN(theta1) && !isNaN(theta2) ) {
-				console.log( "main_game:computerAction(): theta1 NaN, using theta2" );
-				theta = theta2;
-			}
-			else if ( !isNaN(theta1) && isNaN(theta2) ) {
-				console.log( "main_game:computerAction(): theta2 NaN, using theta1" );
-				theta = theta1;
-			}
-			// choose max first if both valid; will be less likely to clip building
-			else {
-				console.log( "main_game:computerAction(): both valid, using max" );
-				theta = Math.max( theta1, theta2 );
-			}
 			
-			// check for clipping on buildings
 			// get subset of buildings between current and target player
 			var bldgSubset = [];
 			if ( currentPlayer == 0 ) {
@@ -457,50 +443,61 @@ window.addEventListener( 'load', function() {
 				bldSubset = buildings.slice( gorillas[otherPlayer].buildingNum+1, gorillas[currentPlayer].buildingNum ); 			
 			}
 			
-			// clip check on each builing's top left and right edges in subset
-			var bldClip = "inPlay";
-			for ( var i=0; i<bldSubset.length; i++ ) {
-				var distLeft = Math.abs(bldSubset[i].topLeft.x - (gorillas[currentPlayer].x+(GORILLA_WIDTH/2)));
-				var distRight = Math.abs(bldSubset[i].topRight.x - (gorillas[currentPlayer].x+(GORILLA_WIDTH/2)));
+			// try both values of theta
+			for( var j=0; j<1; j++ ) {
+				// validity check
+				if ( isNaN( theta[j] ) ) {
+					continue;
+				}
+				// clip check on each builing's top left and right edges in subset
+				for ( var i=0; i<bldSubset.length; i++ ) {
+					var distLeft = Math.abs(bldSubset[i].topLeft.x - (gorillas[currentPlayer].x+(GORILLA_WIDTH/2)));
+					var distRight = Math.abs(bldSubset[i].topRight.x - (gorillas[currentPlayer].x+(GORILLA_WIDTH/2)));
+					
+					// pad each dist by 1 unit to avoid calculated misses that are actually hits
+					if ( currentPlayer == 0 ) {
+						distLeft--;
+						distRight++;
+					}
+					else {
+						distLeft++;
+						distRight--;
+					}
+					console.log( "main_game:computerAction(): bld "+i+" distLeft: "+distLeft+" distRight: "+distRight );
+					
+					var y0 = gameHeight - (gorillas[currentPlayer].y-1);
+					var projHeightLeft = y0 + distLeft*Math.tan(theta[j]) - (grav*Math.pow(distLeft,2))/(2*Math.pow(vel*Math.cos(theta[j]),2));
+					var projHeightRight = y0 + distRight*Math.tan(theta[j]) - (grav*Math.pow(distRight,2))/(2*Math.pow(vel*Math.cos(theta[j]),2));
+					var projYLeft = gameHeight - projHeightLeft;
+					var projYRight = gameHeight - projHeightRight;
+					console.log( "main_game:computerAction(): projYLeft: "+projYLeft+" Top Left Y: "+bldSubset[i].topLeft.y);
+					console.log( "main_game:computerAction(): projYRight: "+projYRight+" Top Right Y: "+bldSubset[i].topRight.y);
+					
+					var bldClip = bldSubset[i].clipCheck( bldSubset[i].topLeft.x, projYLeft );
+					if ( bldClip == false ) {
+						bldClip = bldSubset[i].clipCheck( bldSubset[i].topRight.x, projYRight );
+					}
+					
+					// break loop on clip detection
+					if ( bldClip == true ) {
+						break;
+					}
+				}
 				
-				// pad each dist by 1 unit to avoid calculated misses that are actually hits
-				if ( currentPlayer == 0 ) {
-					distLeft--;
-					distRight++;
+				// if clips on building, keep trying; otherwise we have a successful trajectory
+				if ( bldClip == true ) {
+					console.log( "main_game:computerAction(): theta: "+theta[j]+" vel: "+vel+" clipped building, continuing" );
+					continue;
 				}
 				else {
-					distLeft++;
-					distRight--;
-				}
-				console.log( "main_game:computerAction(): bld "+i+" distLeft: "+distLeft+" distRight: "+distRight );
-				
-				var y0 = gameHeight - (gorillas[currentPlayer].y-1);
-				var projHeightLeft = y0 + distLeft*Math.tan(theta) - (grav*Math.pow(distLeft,2))/(2*Math.pow(vel*Math.cos(theta),2));
-				var projHeightRight = y0 + distRight*Math.tan(theta) - (grav*Math.pow(distRight,2))/(2*Math.pow(vel*Math.cos(theta),2));
-				var projYLeft = gameHeight - projHeightLeft;
-				var projYRight = gameHeight - projHeightRight;
-				console.log( "main_game:computerAction(): projYLeft: "+projYLeft+" Top Left Y: "+bldSubset[i].topLeft.y);
-				console.log( "main_game:computerAction(): projYRight: "+projYRight+" Top Right Y: "+bldSubset[i].topRight.y);
-				
-				bldClip = bldSubset[i].clipCheck( bldSubset[i].topLeft.x, projYLeft );
-				if ( bldClip == false ) {
-					bldClip = bldSubset[i].clipCheck( bldSubset[i].topRight.x, projYRight );
-				}
-				
-				// break loop on clip detection
-				if ( bldClip == true ) {
+					angle = Math.round(theta[j] * 180 / Math.PI);
+					trajSuccess = true;
 					break;
 				}
 			}
 			
-			// if clips on building, keep trying
-			// otherwise we have a successful trajectory
-			if ( bldClip == true ) {
-				console.log( "main_game:computerAction(): theta: "+theta+" vel: "+vel+" clipped building, continuing" );
-				continue;
-			}
-			else {
-				angle = Math.round(theta * 180 / Math.PI);
+			// break main loop also if successful trajectory found
+			if ( trajSuccess == true ) {
 				break;
 			}
 		}
