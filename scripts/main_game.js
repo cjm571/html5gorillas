@@ -48,6 +48,9 @@ window.addEventListener( 'load', function() {
 	var player1Name = "Player 2";
 	var pointsToWin = 3;
 	
+	// begin errRange at 30, and halve after each attempt, reset between rounds
+	var errRange = 30;
+	
 	// flag to prevent multiple launches by player
 	var launchReady = true;
 	
@@ -319,6 +322,9 @@ window.addEventListener( 'load', function() {
 		// draw buildings, sun, and player sprites
 		drawBackground( );
 		
+		// reset computer error bound
+		errRange = 30;
+		
 		buildings = [];
 		initBuildings( bgContext, buildings );
 		
@@ -501,20 +507,27 @@ window.addEventListener( 'load', function() {
 				break;
 			}
 		}
-		
+	
+		console.log( "main_game:computerAction(): Exact trajectory: angle: "+angle+" vel: "+vel );
+	
 		// if no suitable angle found, NPC will suicide
 		if ( typeof angle === "undefined" ) {
 			angle = 90;
 			vel = 25;
 		}
-	
-		console.log( "main_game:computerAction(): Trajectory found: angle: "+angle+" vel: "+vel );
-		
-		// TODO generate random error
+		// otherwise, generate random error within errRange of 0
+		else {		
+			angle += Math.floor((Math.random()*(errRange*2))-errRange);
+			vel += Math.floor((Math.random()*(errRange*2))-errRange);
+			console.log( "main_game:computerAction(): Used trajectory: angle: "+angle+" vel: "+vel );
+			console.log( "main_game:computerAction(): errRange: "+errRange );
+			errRange = Math.floor(errRange/2);
+		}
 		
 		// enter calculated coordinates
 		document.getElementById("angle"+currentPlayer+"Input").value = angle;
 		document.getElementById("vel"+currentPlayer+"Input").value = vel;
+		
 		launchBanana( bananaContext, gorillas[currentPlayer], gorillas[(currentPlayer+1)%2],
 					  buildings, angle, vel, function( hitType, x, y ) { launchCallback( hitType, x, y ); } );
 	}
