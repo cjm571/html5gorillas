@@ -25,7 +25,7 @@ function Banana( x, y, owner ) {
 	this.vRightImage = new Image();
 	this.vRightImage.src = "images/banana_v_right.png";
 	this.vRightImage.onload = function() {
-		imageReady[3] = true;
+		imageReady[1] = true;
 		//console.log( "banana:Banana(): vRightImage loaded" );
 	};
 	this.hDownImage = new Image();
@@ -37,7 +37,7 @@ function Banana( x, y, owner ) {
 	this.vLeftImage = new Image();
 	this.vLeftImage.src = "images/banana_v_left.png";
 	this.vLeftImage.onload = function() {
-		imageReady[1] = true;
+		imageReady[3] = true;
 		//console.log( "banana:Banana(): vLeftImage loaded" );
 	};
 	
@@ -51,7 +51,6 @@ function Banana( x, y, owner ) {
 	this.draw = function( context ) {
 		var self = this;
 	
-		// test 172, 173
 		// check first that image is loaded
 		if ( !imageReady[this.orientation] ) {
 			// wait 10ms, then recursively call
@@ -60,12 +59,17 @@ function Banana( x, y, owner ) {
 			return;
 		}
 		
+		// BEGIN get rid of this shit
+		var bgCtx = document.getElementById("bg_canvas").getContext("2d");
+		bgCtx.fillStyle = 'red';
+		bgCtx.fillRect( this.x, this.y, 1, 1 );
+		// END get rid of this shit
+		
 		// each orientation requires different drawing parameters to properly
 		// mimic a rotating motion, also dependent on player
 		switch ( this.orientation ) {
 		case 0:
 			context.drawImage( this.images[0], this.x, this.y-(BANANA_LENGTH/2) );
-			//console.log( "banana:Banana.draw(): orientation " + this.orientation + " drawn at (" + this.x + ", " + this.y + ")" );
 			break;
 		case 1:
 			if ( this.owner.playerNum == 0 ) {
